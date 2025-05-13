@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product Management - Jersey Jhony</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        h1 { text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #b90f0f; color: white; }
+        .btn { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .btn.add { background-color: #00b894; color: white; margin-bottom: 10px; }
+        .btn.edit { background-color: #0984e3; color: white; }
+        .btn.delete { background-color: #d63031; color: white; }
+        #addProductPopup, #editProductPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        label { font-weight: 600; display: block; margin-top: 10px; }
+        input[type="text"], input[type="number"], input[type="file"] {
+            width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px;
+        }
+        .size-stock-row, .variant-row {
+            display: flex; gap: 10px; margin-top: 10px; align-items: center;
+        }
+        .size-stock-row input, .variant-row input[type="text"] {
+            flex: 1;
+        }
+        .size-stock-row input[type="number"] {
+            width: 100px;
+        }
+        .remove-btn {
+            background: #d63031; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;
+        }
+        .add-row-btn {
+            margin-top: 10px; padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;
+        }
+        .form-buttons {
+            margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;
+        }
+        .form-buttons button {
+            padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;
+        }
+        .form-buttons .save-btn {
+            background-color: #00b894; color: white;
+        }
+        .form-buttons .cancel-btn {
+            background-color: #d63031; color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Product Management</h1>
+    <button id="openAddProductBtn" class="btn add">➕ Add New Product</button>
+    <table id="productListTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Sizes & Stocks</th>
+                <th>Variants</th>
+                <th>Category</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="overlay"></div>
+
+    <div id="addProductPopup">
+        <h3>Add New Product</h3>
+        <form id="addProductForm">
+            <label for="addProductName">Product Name</label>
+            <input type="text" id="addProductName" placeholder="Product Name" required />
+
+            <label for="addProductPrice">Price</label>
+            <input type="number" id="addProductPrice" placeholder="Price" required />
+
+            <label>Sizes and Stocks</label>
+            <div id="addSizeStockContainer"></div>
+            <button type="button" id="addSizeStockBtn" class="add-row-btn">Add Size</button>
+
+            <label>Variants</label>
+            <div id="addVariantContainer"></div>
+            <button type="button" id="addVariantBtn" class="add-row-btn">Add Variant</button>
+
+            <label for="addProductCategory">Category</label>
+            <input type="text" id="addProductCategory" placeholder="Category" required />
+
+            <label for="addProductImage">Upload Image</label>
+            <input type="file" id="addProductImage" accept="image/*" required />
+
+            <div class="form-buttons">
+                <button type="submit" class="save-btn">Add Product</button>
+                <button type="button" id="addProductCancelBtn" class="cancel-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="editProductPopup">
+        <h3>Edit Product</h3>
+        <form id="editProductForm">
+            <label for="editProductName">Product Name</label>
+            <input type="text" id="editProductName" placeholder="Product Name" required />
+
+            <label for="editProductPrice">Price</label>
+            <input type="number" id="editProductPrice" placeholder="Price" required />
+
+            <label>Sizes and Stocks</label>
+            <div id="editSizeStockContainer"></div>
+            <button type="button" id="editAddSizeStockBtn" class="add-row-btn">Add Size</button>
+
+            <label>Variants</label>
+            <div id="editVariantContainer"></div>
+            <button type="button" id="editAddVariantBtn" class="add-row-btn">Add Variant</button>
+
+            <label for="editProductCategory">Category</label>
+            <input type="text" id="editProductCategory" placeholder="Category" required />
+
+            <label for="editProductImage">Upload Image</label>
+            <input type="file" id="editProductImage" accept="image/*" />
+
+            <div class="form-buttons">
+                <button type="submit" class="save-btn">Save Changes</button>
+                <button type="button" id="editProductCancelBtn" class="cancel-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let products = [];
+
+        // Load products from localStorage or initialize empty
+        function loadProducts() {
+            const storedProducts = localStorage.getItem('products');
+            if (storedProducts) {
+                try {
+                    products = JSON.parse(storedProducts);
+                    if (!Array.isArray(products)) {
+                        products = [];
+                    }
+                } catch (e) {
+                    products = [];
+                }
+            } else {
+                products = [];
+            }
+        }
+
+        // Save products to localStorage
+        function saveProducts() {
+            localStorage.setItem('products', JSON.stringify(products));
+        }
+
+        // Render product list table
+        function renderProductList() {
+            const tbody = document.querySelector('#productListTable tbody');
+            tbody.innerHTML = '';
+            products.forEach((product, index) => {
+                const tr = document.createElement('tr');
+                const imgSrc = product.image ? product.image : 'https://via.placeholder.com/50';
+
+                // Prepare sizes and stocks display string
+                let sizesDisplay = '';
+                if (product.sizes && product.sizes.length > 0) {
+                    sizesDisplay = '<ul style="list-style:none; padding-left:0; margin:0;">';
+                    product.sizes.forEach(sizeObj => {
+                        sizesDisplay += `<li>${sizeObj.size}: ${sizeObj.stock}</li>`;
+                    });
+                    sizesDisplay += '</ul>';
+                } else {
+                    sizesDisplay = product.stock !== undefined ? product.stock : 'N/A';
+                }
+
+                // Prepare variants display string
+                let variantsDisplay = '';
+                if (product.variants && product.variants.length > 0) {
+                    variantsDisplay = '<ul style="list-style:none; padding-left:0; margin:0;">';
+                    product.variants.forEach(variant => {
+                        variantsDisplay += `<li>${variant}</li>`;
+                    });
+                    variantsDisplay += '</ul>';
+                } else {
+                    variantsDisplay = 'N/A';
+                }
+
+                tr.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${product.price.toFixed(2)}</td>
+                    <td>${sizesDisplay}</td>
+                    <td>${variantsDisplay}</td>
+                    <td>${product.category}</td>
+                    <td><img src="${imgSrc}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                    <td>
+                        <button class="edit-btn btn edit" data-index="${index}">Edit</button>
+                        <button class="delete-btn btn delete" data-index="${index}">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Attach event listeners to edit buttons
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    openEditProductPopup(idx);
+                });
+            });
+
+            // Attach event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    if (confirm('Are you sure you want to delete this product?')) {
+                        products.splice(idx, 1);
+                        saveProducts();
+                        renderProductList();
+                    }
+                });
+            });
+        }
+
+        // Add Size Stock row function for add product form
+        function addSizeStockRow() {
+            const container = document.getElementById('addSizeStockContainer');
+            const div = document.createElement('div');
+            div.className = 'size-stock-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.innerHTML = `
+                <input type="text" class="sizeInput" placeholder="Size (e.g. S, M, L)" required />
+                <input type="number" class="stockInput" placeholder="Stock" required />
+                <button type="button" class="removeSizeStockBtn">X</button>
+            `;
+            container.appendChild(div);
+
+            div.querySelector('.removeSizeStockBtn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Add Variant row function for add product form
+        function addVariantRow() {
+            const container = document.getElementById('addVariantContainer');
+            const div = document.createElement('div');
+            div.className = 'variant-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="variantInput" placeholder="Variant (e.g. Color, Material)" />
+                <input type="file" class="variantImageInput" accept="image/*" />
+                <button type="button" class="removeVariantBtn">X</button>
+            `;
+            container.appendChild(div);
+
+            div.querySelector('.removeVariantBtn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Add Size Stock row function for edit product form
+        function addSizeStockRowToEdit(size = '', stock = 0) {
+            const container = document.getElementById('editSizeStockContainer');
+            const div = document.createElement('div');
+            div.className = 'size-stock-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.innerHTML = `
+                <input type="text" class="sizeInput" placeholder="Size (e.g. S, M, L)" value="${size}" required />
+                <input type="number" class="stockInput" placeholder="Stock" value="${stock}" />
+                <button type="button" class="removeSizeStockBtn">X</button>
+            `;
+            container.appendChild(div);
+
+            div.querySelector('.removeSizeStockBtn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Add Variant row function for edit product form
+        function addVariantRowToEdit(variant = '') {
+            const container = document.getElementById('editVariantContainer');
+            const div = document.createElement('div');
+            div.className = 'variant-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="variantInput" placeholder="Variant (e.g. Color, Material)" value="${variant}" />
+                <input type="file" class="variantImageInput" accept="image/*" />
+                <button type="button" class="removeVariantBtn">X</button>
+            `;
+            container.appendChild(div);
+
+            div.querySelector('.removeVariantBtn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Open edit product popup with pre-filled data
+        function openEditProductPopup(index) {
+            const product = products[index];
+            if (!product) return;
+
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductPrice').value = product.price;
+            document.getElementById('editProductCategory').value = product.category;
+            document.getElementById('editProductImage').value = '';
+
+            // Clear existing size-stock rows and variant rows
+            const sizeStockContainer = document.getElementById('editSizeStockContainer');
+            sizeStockContainer.innerHTML = '';
+            if (product.sizes && product.sizes.length > 0) {
+                product.sizes.forEach(sizeObj => {
+                    addSizeStockRowToEdit(sizeObj.size, sizeObj.stock);
+                });
+            } else {
+                addSizeStockRowToEdit('', 0);
+            }
+
+            const variantContainer = document.getElementById('editVariantContainer');
+            variantContainer.innerHTML = '';
+            if (product.variants && product.variants.length > 0) {
+                product.variants.forEach(variant => {
+                    addVariantRowToEdit(variant);
+                });
+            } else {
+                addVariantRowToEdit('');
+            }
+
+            const popup = document.getElementById('editProductPopup');
+            const overlay = document.getElementById('editProductOverlay');
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+
+            const form = document.getElementById('editProductForm');
+            form.dataset.editIndex = index;
+        }
+
+        // Close edit product popup
+        document.getElementById('editProductCancelBtn').addEventListener('click', () => {
+            document.getElementById('editProductPopup').style.display = 'none';
+            document.getElementById('editProductOverlay').style.display = 'none';
+        });
+
+        document.getElementById('editProductOverlay').addEventListener('click', () => {
+            document.getElementById('editProductPopup').style.display = 'none';
+            document.getElementById('editProductOverlay').style.display = 'none';
+        });
+
+        // Handle edit product form submission
+        document.getElementById('editProductForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const index = e.target.dataset.editIndex;
+            if (index === undefined) return;
+
+            const name = document.getElementById('editProductName').value.trim();
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const category = document.getElementById('editProductCategory').value.trim();
+            const imageInput = document.getElementById('editProductImage');
+
+            // Collect sizes and stocks from dynamic rows
+            const sizeRows = document.querySelectorAll('#editSizeStockContainer .size-stock-row');
+            const sizes = [];
+            for (const row of sizeRows) {
+                const sizeVal = row.querySelector('.sizeInput').value.trim();
+                const stockVal = parseInt(row.querySelector('.stockInput').value);
+                if (!sizeVal || isNaN(stockVal) || stockVal < 0) {
+                    alert('Please enter valid size and stock values.');
+                    return;
+                }
+                sizes.push({ size: sizeVal, stock: stockVal });
+            }
+
+            // Collect variants from dynamic rows
+            const variantRows = document.querySelectorAll('#editVariantContainer .variant-row');
+            const variants = [];
+            for (const row of variantRows) {
+                const variantVal = row.querySelector('.variantInput').value.trim();
+                if (variantVal) {
+                    variants.push(variantVal);
+                }
+            }
+
+            if (!name || isNaN(price) || price <= 0 || !category) {
+                alert('Please fill all fields correctly.');
+                return;
+            }
+
+            const updateProduct = (imageDataUrl = null) => {
+                products[index].name = name;
+                products[index].price = price;
+                products[index].sizes = sizes;
+                products[index].variants = variants;
+                products[index].category = category;
+                if (imageDataUrl) {
+                    products[index].image = imageDataUrl;
+                }
+                saveProducts();
+                renderProductList();
+                alert('Product updated successfully.');
+                document.getElementById('editProductPopup').style.display = 'none';
+                document.getElementById('editProductOverlay').style.display = 'none';
+            };
+
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    updateProduct(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                updateProduct();
+            }
+        });
+    </script>
+</body>
+</html>

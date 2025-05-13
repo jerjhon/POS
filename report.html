@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Transaction Report - Jersey Jhony</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+  h2 { text-align: center; }
+  #chartContainer { max-width: 800px; margin: 0 auto 40px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+  th { background-color: #6c5ce7; color: white; }
+</style>
+</head>
+<body>
+<h2>Grafik Penjualan dan Transaction Report</h2>
+<div id="chartContainer">
+  <canvas id="salesChart"></canvas>
+</div>
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Size</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                            <th>Payment Method</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button id="downloadExcelBtn" style="margin-top: 10px; padding: 8px 16px; background-color: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;">Download Excel</button>
+
+                <script>
+                  // Load salesData from localStorage of opener window if available, else from localStorage here
+                  let salesData = [];
+                  try {
+                    if (window.opener && window.opener.localStorage) {
+                      salesData = JSON.parse(window.opener.localStorage.getItem('salesData')) || [];
+                    } else {
+                      salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+                    }
+                  } catch (e) {
+                    salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+                  }
+
+                  // Render transaction report table
+                  const tbody = document.querySelector('#reportTable tbody');
+                  if (salesData.length === 0) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td colspan="6" style="text-align:center;">No transactions found.</td>';
+                    tbody.appendChild(tr);
+                  } else {
+                    salesData.forEach(sale => {
+                      const tr = document.createElement('tr');
+                      tr.innerHTML = `
+                        <td>${sale.tanggal}</td>
+                        <td>${sale.produk}</td>
+                        <td>${sale.size || ''}</td>
+                        <td>${sale.qty}</td>
+                        <td>${sale.total}</td>
+                        <td>${sale.paymentMethod || ''}</td>
+                      `;
+                      tbody.appendChild(tr);
+                    });
+                  }
+
+                  // Aggregate sales per product for chart
+                  const salesByProduct = {};
+                  salesData.forEach(sale => {
+                    if (!salesByProduct[sale.produk]) {
+                      salesByProduct[sale.produk] = 0;
+                    }
+                    salesByProduct[sale.produk] += parseInt(sale.qty);
+                  });
+
+                  const labels = Object.keys(salesByProduct);
+                  const data = Object.values(salesByProduct);
+
+                  const ctx = document.getElementById('salesChart').getContext('2d');
+                  const salesChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                      labels: labels,
+                      datasets: [{
+                        label: 'Jumlah Terjual',
+                        data: data,
+                        backgroundColor: 'rgba(108, 92, 231, 0.7)',
+                        borderColor: 'rgba(108, 92, 231, 1)',
+                        borderWidth: 1
+                      }]
+                    },
+                    options: {
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          precision: 0
+                        }
+                      }
+                    }
+                  });
+
+                  // Download Excel button event
+                  document.getElementById('downloadExcelBtn').addEventListener('click', () => {
+                    if (salesData.length === 0) {
+                      alert('No transactions to download.');
+                      return;
+                    }
+
+                    // Prepare CSV content
+                    const headers = ['Date', 'Product', 'Size', 'Quantity', 'Total', 'Payment Method'];
+                    const rows = salesData.map(sale => [
+                      sale.tanggal,
+                      sale.produk,
+                      sale.size || '',
+                      sale.qty,
+                      sale.total,
+                      sale.paymentMethod || ''
+                    ]);
+
+                    let csvContent = 'data:text/csv;charset=utf-8,';
+                    csvContent += headers.join(',') + '\r\n';
+                    rows.forEach(row => {
+                      csvContent += row.map(field => `"${field}"`).join(',') + '\r\n';
+                    });
+
+                    // Create a download link and trigger it
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', encodedUri);
+                    link.setAttribute('download', 'transaction_report.csv');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  });
+                </script>
+</body>
+</html>

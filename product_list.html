@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Product List - Jersey Jhony</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+  h2 { text-align: center; }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+  th { background-color: #6c5ce7; color: white; }
+  button { padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+  .edit-btn { background-color: #0984e3; color: white; margin-right: 5px; }
+  .delete-btn { background-color: #d63031; color: white; }
+  #editProductOverlay {
+    display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1100;
+  }
+  #editProductPopup {
+    display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    z-index: 1101; max-width: 400px; width: 90vw; max-height: 90vh; overflow-y: auto;
+  }
+  #editProductPopup h3 {
+    margin-bottom: 20px; font-weight: bold; font-size: 22px; text-align: center;
+  }
+  #editProductForm {
+    display: flex; flex-direction: column; gap: 15px;
+  }
+  #editProductForm label {
+    font-weight: 600;
+  }
+  #editProductForm input[type="text"],
+  #editProductForm input[type="number"],
+  #editProductForm input[type="file"] {
+    padding: 10px; border: 1px solid #ccc; border-radius: 5px;
+  }
+  #editProductForm .buttons {
+    display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;
+  }
+  #editProductForm button {
+    padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;
+  }
+  #saveBtn {
+    background-color: #00b894; color: white;
+  }
+  #cancelBtn {
+    background-color: #d63031; color: white;
+  }
+  #addProductPopup button[type="submit"] {
+    pointer-events: auto;
+  }
+</style>
+</head>
+<body>
+<h2>Product List</h2>
+  <button id="openAddProductBtn" style="padding: 10px 20px; margin-bottom: 10px; background-color: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">➕ Add New Product</button>
+  <table id="productListTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Variant</th>
+        <th>Category</th>
+        <th>Image</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Add New Product Popup -->
+  <div id="addProductOverlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1100;"></div>
+  <div id="addProductPopup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1101; max-width: 400px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+      <h3 style="margin-bottom: 20px; font-weight: bold; font-size: 22px; text-align: center;">Add New Product</h3>
+      <form id="addProductForm" style="display: flex; flex-direction: column; gap: 15px;">
+          <label for="addProductName" style="font-weight: 600;">Product Name</label>
+          <input type="text" id="addProductName" placeholder="Product Name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+          <label for="addProductPrice" style="font-weight: 600;">Price</label>
+          <input type="number" id="addProductPrice" placeholder="Price" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+          <label style="font-weight: 600;">Sizes and Stocks</label>
+          <div id="sizeStockContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+              <div class="size-stock-row" style="display: flex; gap: 10px;">
+                  <input type="text" class="sizeInput" placeholder="Size (e.g. S, M, L)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                  <input type="number" class="stockInput" placeholder="Stock" style="width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                  <button type="button" class="removeSizeStockBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+              </div>
+          </div>
+          <button type="button" id="addSizeStockBtn" style="width: fit-content; padding: 5px 10px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Size</button>
+
+          <label style="font-weight: 600; margin-top: 15px;">Variants</label>
+          <div id="variantContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+              <div class="variant-row" style="display: flex; gap: 10px; align-items: center;">
+                  <input type="text" class="variantInput" placeholder="Variant (e.g. Color, Material)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" />
+                  <input type="file" class="variantImageInput" accept="image/*" style="padding: 5px; border: 1px solid #ccc; border-radius: 5px;"/>
+                  <button type="button" class="removeVariantBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+              </div>
+          </div>
+          <button type="button" id="addVariantBtn" style="width: fit-content; padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Variant</button>
+
+          <label for="addProductCategory" style="font-weight: 600; margin-top: 15px;">Category</label>
+          <input type="text" id="addProductCategory" placeholder="Category" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+          <label for="addProductImage" style="font-weight: 600;">Upload Image</label>
+          <input type="file" id="addProductImage" accept="image/*" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+              <button type="submit" style="padding: 10px 20px; background-color: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Product</button>
+              <button type="button" id="addProductCancelBtn" style="padding: 10px 20px; background-color: #d63031; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+          </div>
+      </form>
+  </div>
+
+<!-- Edit Product Popup -->
+<div id="editProductOverlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1100;"></div>
+<div id="editProductPopup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1101; max-width: 400px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+    <h3 style="margin-bottom: 20px; font-weight: bold; font-size: 22px; text-align: center;">Edit Product</h3>
+    <form id="editProductForm" style="display: flex; flex-direction: column; gap: 15px;">
+        <label for="editProductName" style="font-weight: 600;">Product Name</label>
+        <input type="text" id="editProductName" placeholder="Product Name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+        <label for="editProductPrice" style="font-weight: 600;">Price</label>
+        <input type="number" id="editProductPrice" placeholder="Price" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+        <label style="font-weight: 600;">Sizes and Stocks</label>
+        <div id="editSizeStockContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;"></div>
+        <button type="button" id="editAddSizeStockBtn" style="width: fit-content; padding: 5px 10px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Size</button>
+
+        <label style="font-weight: 600; margin-top: 15px;">Variants</label>
+        <div id="editVariantContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;"></div>
+        <button type="button" id="editAddVariantBtn" style="width: fit-content; padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Variant</button>
+
+        <label for="editProductCategory" style="font-weight: 600; margin-top: 15px;">Category</label>
+        <input type="text" id="editProductCategory" placeholder="Category" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+        <label for="editProductImage" style="font-weight: 600;">Upload Image</label>
+        <input type="file" id="editProductImage" accept="image/*" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" />
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+            <button type="submit" style="padding: 10px 20px; background-color: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Save Changes</button>
+            <button type="button" id="editProductCancelBtn" style="padding: 10px 20px; background-color: #d63031; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<script>
+  let products = [];
+
+  // Load products from localStorage or initialize empty
+  function loadProducts() {
+    const storedProducts = localStorage.getItem('products');
+    if (storedProducts) {
+      try {
+        products = JSON.parse(storedProducts);
+        if (!Array.isArray(products)) {
+          products = [];
+        }
+      } catch (e) {
+        products = [];
+      }
+    } else {
+      products = [];
+    }
+  }
+
+  // Save products to localStorage
+  function saveProducts() {
+    localStorage.setItem('products', JSON.stringify(products));
+  }
+
+  // Render product list table
+  function renderProductList() {
+    const tbody = document.querySelector('#productListTable tbody');
+    tbody.innerHTML = '';
+    products.forEach((product, index) => {
+      const tr = document.createElement('tr');
+      const imgSrc = product.image ? product.image : 'https://via.placeholder.com/50';
+
+      // Prepare sizes and stocks display string
+      let sizesDisplay = '';
+      if (product.sizes && product.sizes.length > 0) {
+        sizesDisplay = '<ul style="list-style:none; padding-left:0; margin:0;">';
+        product.sizes.forEach(sizeObj => {
+          sizesDisplay += `<li>${sizeObj.size}: ${sizeObj.stock}</li>`;
+        });
+        sizesDisplay += '</ul>';
+      } else {
+        sizesDisplay = product.stock !== undefined ? product.stock : 'N/A';
+      }
+
+      // Prepare variants display string
+      let variantsDisplay = '';
+      if (product.variants && product.variants.length > 0) {
+        variantsDisplay = '<ul style="list-style:none; padding-left:0; margin:0;">';
+        product.variants.forEach(variant => {
+          variantsDisplay += `<li>${variant}</li>`;
+        });
+        variantsDisplay += '</ul>';
+      } else {
+        variantsDisplay = 'N/A';
+      }
+
+      tr.innerHTML = `
+        <td>${product.name}</td>
+        <td>${product.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</td>
+        <td>${sizesDisplay}</td>
+        <td>${variantsDisplay}</td>
+        <td>${product.category}</td>
+        <td><img src="${imgSrc}" alt="${product.name}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;"></td>
+        <td>
+          <button class="edit-btn" data-index="${index}">Edit</button>
+          <button class="delete-btn" data-index="${index}">Delete</button>
+          <button class="show-btn" data-index="${index}">Show</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Attach event listeners to edit buttons
+    document.querySelectorAll('.edit-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const idx = e.target.getAttribute('data-index');
+        openEditProductPopup(idx);
+      });
+    });
+
+    // Attach event listeners to delete buttons
+    document.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const idx = e.target.getAttribute('data-index');
+        if (confirm('Are you sure you want to delete this product?')) {
+          products.splice(idx, 1);
+          saveProducts();
+          renderProductList();
+        }
+      });
+    });
+  }
+
+  // Open edit product popup with pre-filled data
+  function openEditProductPopup(index) {
+    const product = products[index];
+    if (!product) return;
+
+    document.getElementById('editProductName').value = product.name;
+    document.getElementById('editProductPrice').value = product.price;
+    document.getElementById('editProductStock').value = product.stock;
+    document.getElementById('editProductSize').value = product.size;
+    document.getElementById('editProductCategory').value = product.category;
+    document.getElementById('editProductImage').value = '';
+
+    document.getElementById('editProductPopup').style.display = 'block';
+    document.getElementById('editProductOverlay').style.display = 'block';
+
+    // Store index in form dataset for reference on save
+    const form = document.getElementById('editProductForm');
+    form.dataset.editIndex = index;
+  }
+
+  // Close edit product popup
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    document.getElementById('editProductPopup').style.display = 'none';
+    document.getElementById('editProductOverlay').style.display = 'none';
+  });
+
+  document.getElementById('editProductOverlay').addEventListener('click', () => {
+    document.getElementById('editProductPopup').style.display = 'none';
+    document.getElementById('editProductOverlay').style.display = 'none';
+  });
+
+  // Handle edit product form submission
+  document.getElementById('editProductForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const index = e.target.dataset.editIndex;
+    if (index === undefined) return;
+
+    const name = document.getElementById('editProductName').value.trim();
+    const price = parseFloat(document.getElementById('editProductPrice').value);
+    const stock = parseInt(document.getElementById('editProductStock').value);
+    const size = document.getElementById('editProductSize').value.trim();
+    const category = document.getElementById('editProductCategory').value.trim();
+    const imageInput = document.getElementById('editProductImage');
+
+    if (!name || isNaN(price) || price <= 0 || isNaN(stock) || stock < 0 || !size || !category) {
+      alert('Please fill all fields correctly.');
+      return;
+    }
+
+    const updateProduct = (imageDataUrl = null) => {
+      products[index].name = name;
+      products[index].price = price;
+      products[index].stock = stock;
+      products[index].size = size;
+      products[index].category = category;
+      if (imageDataUrl) {
+        products[index].image = imageDataUrl;
+      }
+      saveProducts();
+      renderProductList();
+      alert('Product updated successfully.');
+      document.getElementById('editProductPopup').style.display = 'none';
+      document.getElementById('editProductOverlay').style.display = 'none';
+    };
+
+    if (imageInput.files.length > 0) {
+      const file = imageInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        updateProduct(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      updateProduct();
+    }
+  });
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    loadProducts();
+    renderProductList();
+
+    // Open Add Product popup
+    document.getElementById('openAddProductBtn').addEventListener('click', () => {
+      document.getElementById('addProductPopup').style.display = 'block';
+      document.getElementById('addProductOverlay').style.display = 'block';
+    });
+
+    // Close Add Product popup
+    document.getElementById('addProductCancelBtn').addEventListener('click', () => {
+      document.getElementById('addProductPopup').style.display = 'none';
+      document.getElementById('addProductOverlay').style.display = 'none';
+    });
+
+    document.getElementById('addProductOverlay').addEventListener('click', () => {
+      document.getElementById('addProductPopup').style.display = 'none';
+      document.getElementById('addProductOverlay').style.display = 'none';
+    });
+
+    // Add Product form submit event
+    document.getElementById('addProductForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('addProductName');
+      const priceInput = document.getElementById('addProductPrice');
+      const stockInput = document.getElementById('addProductStock');
+      const sizeInput = document.getElementById('addProductSize');
+      const categoryInput = document.getElementById('addProductCategory');
+      const imageInput = document.getElementById('addProductImage');
+      const name = nameInput.value.trim();
+      const price = parseFloat(priceInput.value);
+      const stock = parseInt(stockInput.value);
+      const size = sizeInput.value.trim();
+      const category = categoryInput.value.trim();
+
+      if (!name) {
+        alert('Please enter a product name.');
+        return;
+      }
+      if (isNaN(price) || price <= 0) {
+        alert('Please enter a valid price greater than 0.');
+        return;
+      }
+      if (isNaN(stock) || stock < 0) {
+        alert('Please enter a valid stock number.');
+        return;
+      }
+      if (!size) {
+        alert('Please enter a size.');
+        return;
+      }
+      if (!category) {
+        alert('Please enter a category.');
+        return;
+      }
+      if (imageInput.files.length === 0) {
+        alert('Please upload an image.');
+        return;
+      }
+
+      const file = imageInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const imageDataUrl = e.target.result;
+        products.push({ name, price, stock, size, category, image: imageDataUrl });
+        saveProducts();
+        renderProductList();
+        alert(`Product "${name}" added successfully.`);
+        document.getElementById('addProductPopup').style.display = 'none';
+        document.getElementById('addProductOverlay').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+</script>
+</body>
+</html>

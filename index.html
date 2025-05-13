@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>POS Kasir - Jersey Jhony</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; background: #b90f0f; color: white; padding: 15px; font-size: 18px; }
+        .main { display: flex; flex-direction: row; padding: 20px; gap: 20px; }
+        .left, .right { background: white; padding: 15px; border-radius: 8px; flex: 1; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .totals { display: flex; justify-content: space-between; margin-top: 15px; }
+        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .btn.cash { background: #27ae60; color: white; }
+        .btn.ovo { background: #8e44ad; color: white; }
+        .btn.draft { background: #d35400; color: white; }
+        .btn.cancel { background: #c0392b; color: white; }
+        .header-controls { display: flex; gap: 10px; margin-bottom: 10px; }
+        .header-controls input, .header-controls select { padding: 5px; font-size: 14px; }
+        .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .product-card { border: 1px solid #ddd; border-radius: 8px; text-align: center; padding: 10px; cursor: pointer; }
+        .product-card img { width: 100px; height: 100px; object-fit: cover; margin-bottom: 5px; }
+        .product-header { display: flex; gap: 10px; justify-content: space-around; margin-bottom: 10px; }
+        .product-header div { flex: 1; text-align: center; padding: 10px; border-radius: 5px; background: #eee; cursor: pointer; }
+        .product-header .active { background: #b90f0f; color: white; }
+        /* Receipt popup styles */
+        #receiptPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #000;
+            padding: 20px;
+            z-index: 1000;
+            max-width: 320px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            font-family: monospace;
+        }
+        #receiptPopup table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #receiptPopup th, #receiptPopup td {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+        #receiptPopup th {
+            text-align: left;
+        }
+        #receiptPopup td.qty, #receiptPopup th.qty {
+            text-align: center;
+        }
+        #receiptPopup td.price, #receiptPopup th.price,
+        #receiptPopup td.total, #receiptPopup th.total {
+            text-align: right;
+        }
+        #receiptPopup hr {
+            border: 1px solid #000;
+            margin: 10px 0;
+        }
+        #receiptPopup .buttons {
+            text-align: center;
+            margin-top: 10px;
+        }
+        #receiptPopup button {
+            margin: 0 5px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #receiptPopup, #receiptPopup * {
+                visibility: visible;
+            }
+            #receiptPopup {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                box-shadow: none;
+                transform: none;
+            }
+        }
+        /* Responsive and touch-friendly styles */
+        @media (max-width: 768px) {
+            .main {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .left, .right {
+                padding: 10px;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .btn {
+                padding: 15px 25px;
+                font-size: 18px;
+                margin: 8px 0;
+                border-radius: 8px;
+            }
+            .header-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .header-controls input, .header-controls select {
+                font-size: 16px;
+                padding: 12px;
+            }
+            table th, table td {
+                padding: 12px 8px;
+                font-size: 16px;
+            }
+            .product-card {
+                padding: 15px;
+            }
+            .product-card img {
+                width: 120px;
+                height: 120px;
+            }
+            .product-header div {
+                padding: 15px;
+                font-size: 18px;
+            }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                padding: 18px 30px;
+                font-size: 20px;
+                border-radius: 10px;
+            }
+            .product-card {
+                padding: 20px;
+            }
+            .product-card img {
+                width: 140px;
+                height: 140px;
+            }
+            .product-header div {
+                padding: 20px;
+                font-size: 20px;
+            }
+            input, select, button {
+                touch-action: manipulation;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div>JERJHON POS -  <strong>ADMIN</strong></div>
+        <div>
+            <a href="admin.html" style="color:white;">ADMIN</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="left">
+            <div class="header-controls">
+                <input type="date" id="tanggal" value="2025-05-09" />
+                <select id="toko">
+                    <option>Toko 1</option>
+                    <option>Toko 2</option>
+                </select>
+            </div>
+            <div class="header-controls">
+                <input type="text" id="customer" placeholder="walk-in-customer (11112222)" style="flex:2;" />
+                <button id="addCustomer">+</button>
+                <input type="text" id="searchProduk" placeholder="Cari produk..." style="flex:3;" />
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produk</th>
+                        <th>Harga</th>
+                        <th>Qty</th>
+                        <th>Subtotal</th>
+                        <th>Stok</th>
+                    </tr>
+                </thead>
+                <tbody id="cartBody"></tbody>
+            </table>
+            <div class="totals">
+                <div>
+                    <p id="itemCount">Item: 0 (0)</p>
+                    <p id="jumlah">Jumlah: 0.00</p>
+                </div>
+                <div>
+                    <p><label>Discount: <input type="number" id="discountInput" value="0" style="width:80px;" /></label></p>
+                    <p><label>Add On: <input type="number" id="addOnInput" value="0" style="width:80px;" /></label></p>
+                    <p id="addOnDescContainer" style="display:none; margin-top:5px;">
+                        <label>Add On Description: <input type="text" id="addOnDescription" placeholder="Enter add-on description" style="width:200px;" /></label>
+                    </p>
+                    <p><strong id="total">Total: 0.00</strong></p>
+                </div>
+            </div>
+            <div>
+                <button class="btn cash" onclick="checkout('cash')">💵 Cash</button>
+                <button class="btn ovo" onclick="checkout('bca')">💳 BCA</button>
+                <button class="btn cancel" onclick="clearCart()">❌ Cancel</button>
+                <button class="btn" id="showReportBtn" style="background:#0984e3; color:white;">📊 Show Report</button>
+                <button class="btn" id="openAddProductBtn" style="background:#00b894; color:white;">➕ Add New Product</button>
+            </div>
+            <div style="margin-top: 20px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff; max-height: 300px; overflow-y: auto; display: none;" id="reportSection">
+                <h3>Transaction Report</h3>
+                <button id="downloadExcelBtn" style="margin-bottom: 10px; padding: 8px 16px; background-color: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;">Download Excel</button>
+                <table id="reportTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Size</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Add On</th>
+                    <th>Add On Description</th>
+                    <th>Payment Method</th>
+                </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="reportSummary" style="margin-top: 10px; font-weight: bold;"></p>
+            </div>
+
+            <div id="addProductOverlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+
+            <div id="addProductPopup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1000; max-width: 400px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+
+                <h3 style="margin-bottom: 20px; font-weight: bold; font-size: 22px; text-align: center;">Add New Product</h3>
+
+                <form id="addProductForm" style="display: flex; flex-direction: column; gap: 15px;">
+                    <label for="popupProductName" style="font-weight: 600;">Product Name</label>
+                    <input type="text" id="popupProductName" placeholder="Product Name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+                    <label for="popupProductBarcode" style="font-weight: 600;">Barcode</label>
+                    <input type="text" id="popupProductBarcode" placeholder="Barcode" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" />
+
+                    <label for="popupProductPrice" style="font-weight: 600;">Price</label>
+                    <input type="number" id="popupProductPrice" placeholder="Price" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+                    <label style="font-weight: 600;">Sizes and Stocks</label>
+                    <div id="sizeStockContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                        <div class="size-stock-row" style="display: flex; gap: 10px;">
+                            <input type="text" class="sizeInput" placeholder="Size (e.g. S, M, L)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                            <input type="number" class="stockInput" placeholder="Stock" style="width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                            <button type="button" class="removeSizeStockBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+                        </div>
+                    </div>
+                    <button type="button" id="addSizeStockBtn" style="width: fit-content; padding: 5px 10px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Size</button>
+
+                    <label style="font-weight: 600; margin-top: 15px;">Variants</label>
+                    <div id="variantContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                    <div class="variant-row" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" class="variantInput" placeholder="Variant (e.g. Color, Material)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" />
+                        <input type="file" class="variantImageInput" accept="image/*" style="padding: 5px; border: 1px solid #ccc; border-radius: 5px;"/>
+                        <button type="button" class="removeVariantBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+                    </div>
+                    </div>
+                    <button type="button" id="addVariantBtn" style="width: fit-content; padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Variant</button>
+
+                    <label for="popupProductCategory" style="font-weight: 600;">Category</label>
+                    <input type="text" id="popupProductCategory" placeholder="Category" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+                    <label for="popupProductImage" style="font-weight: 600;">Upload Image</label>
+                    <input type="file" id="popupProductImage" accept="image/*" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                        <button type="submit" style="padding: 10px 20px; background-color: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Product</button>
+                        <button type="button" id="popupCloseBtn" style="padding: 10px 20px; background-color: #d63031; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="product-header">
+                <div id="kategori" class="active">All Product</div>
+            </div>
+            <div class="product-grid" id="productList"></div>
+
+            <div id="productListSection" style="margin-top: 20px;">
+                <h3>Product List</h3>
+                <table id="productListTable" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Size</th>
+                            <th>Category</th>
+                            <th>Image</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="receiptPopup">
+        <div id="receiptContent"></div>
+        <div class="buttons">
+            <button id="printBtn">Print</button>
+            <button id="closeBtn">Close</button>
+        </div>
+    </div>
+
+    <!-- Edit Product Popup -->
+    <div id="editProductOverlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1100;"></div>
+    <div id="editProductPopup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1101; max-width: 400px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+        <h3 style="margin-bottom: 20px; font-weight: bold; font-size: 22px; text-align: center;">Edit Product</h3>
+        <form id="editProductForm" style="display: flex; flex-direction: column; gap: 15px;">
+            <label for="editProductName" style="font-weight: 600;">Product Name</label>
+            <input type="text" id="editProductName" placeholder="Product Name" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+            <label for="editProductBarcode" style="font-weight: 600;">Barcode</label>
+            <input type="text" id="editProductBarcode" placeholder="Barcode" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" />
+
+            <label for="editProductPrice" style="font-weight: 600;">Price</label>
+            <input type="number" id="editProductPrice" placeholder="Price" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+            <label style="font-weight: 600;">Sizes and Stocks</label>
+            <div id="editSizeStockContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;"></div>
+            <button type="button" id="editAddSizeStockBtn" style="width: fit-content; padding: 5px 10px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Size</button>
+
+            <label style="font-weight: 600; margin-top: 15px;">Variants</label>
+            <div id="editVariantContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;"></div>
+            <button type="button" id="editAddVariantBtn" style="width: fit-content; padding: 5px 10px; background: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer;">Add Variant</button>
+
+            <label for="editProductCategory" style="font-weight: 600;">Category</label>
+            <input type="text" id="editProductCategory" placeholder="Category" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" required />
+
+            <label for="editProductImage" style="font-weight: 600;">Upload Image</label>
+            <input type="file" id="editProductImage" accept="image/*" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;" />
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                <button type="submit" style="padding: 10px 20px; background-color: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer;">Save Changes</button>
+                <button type="button" id="editProductCloseBtn" style="padding: 10px 20px; background-color: #d63031; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let products = [];
+
+        // Load products from localStorage or initialize empty
+        function loadProducts() {
+            const storedProducts = localStorage.getItem('products');
+            console.log('Loading products from localStorage:', storedProducts);
+            if (storedProducts) {
+                try {
+                    products = JSON.parse(storedProducts);
+                    if (!Array.isArray(products)) {
+                        products = [];
+                    }
+                } catch (e) {
+                    products = [];
+                }
+            } else {
+                products = [];
+            }
+            console.log('Products loaded:', products);
+        }
+
+        // Format number as Indonesian Rupiah currency
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
+        }
+
+        // Save products to localStorage
+        function saveProducts() {
+            console.log('Saving products to localStorage:', products);
+            localStorage.setItem('products', JSON.stringify(products));
+        }
+
+        // Render product list table
+        function renderProductList() {
+            const tbody = document.querySelector('#productListTable tbody');
+            tbody.innerHTML = '';
+            products.forEach((product, index) => {
+                const tr = document.createElement('tr');
+                const imgSrc = product.image ? product.image : 'https://via.placeholder.com/50';
+
+                // Prepare sizes display string from sizes array
+                let sizesDisplay = '';
+                if (product.sizes && product.sizes.length > 0) {
+                    sizesDisplay = product.sizes.map(s => s.size).join(', ');
+                } else {
+                    sizesDisplay = '';
+                }
+
+                tr.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${product.price.toFixed(2)}</td>
+                    <td>${
+                      product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0
+                        ? product.sizes.reduce((sum, s) => sum + (s.stock || 0), 0)
+                        : product.stock || 0
+                    }</td>
+                    <td>${sizesDisplay}</td>
+                    <td>${product.category}</td>
+                    <td><img src="${imgSrc}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                    <td>
+                        <button class="edit-btn" data-index="${index}" style="padding: 5px 10px; background-color: #0984e3; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px;">Edit</button>
+                        <button class="delete-btn" data-index="${index}" style="padding: 5px 10px; background-color: #d63031; color: white; border: none; border-radius: 5px; cursor: pointer;">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+        // Use event delegation for edit and delete buttons to prevent multiple event listeners
+        // Remove previous event listener if any to avoid duplicate listeners
+        const oldTbody = document.querySelector('#productListTable tbody');
+        const newTbody = oldTbody.cloneNode(true);
+        oldTbody.parentNode.replaceChild(newTbody, oldTbody);
+        newTbody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                const idx = e.target.getAttribute('data-index');
+                openEditProductPopup(idx);
+            } else if (e.target.classList.contains('delete-btn')) {
+                const idx = e.target.getAttribute('data-index');
+                if (confirm('Are you sure you want to delete this product?')) {
+                    products.splice(idx, 1);
+                    saveProducts();
+                    displayProducts();
+                    renderProductList();
+                }
+            }
+        });
+        }
+
+        // Open edit product popup with pre-filled data
+        function openEditProductPopup(index) {
+            const product = products[index];
+            if (!product) return;
+
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductPrice').value = product.price;
+            document.getElementById('editProductCategory').value = product.category;
+            document.getElementById('editProductImage').value = '';
+
+            // Clear existing size-stock rows and variant rows
+            const sizeStockContainer = document.getElementById('editSizeStockContainer');
+            sizeStockContainer.innerHTML = '';
+            if (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) {
+                product.sizes.forEach(sizeObj => {
+                    if (sizeObj && sizeObj.size !== undefined && sizeObj.stock !== undefined) {
+                        addEditSizeStockRow(sizeObj.size, sizeObj.stock, sizeObj.barcode);
+                    }
+                });
+            } else {
+                addEditSizeStockRow('', 0);
+            }
+
+            const variantContainer = document.getElementById('editVariantContainer');
+            variantContainer.innerHTML = '';
+            if (product.variants && product.variants.length > 0) {
+                product.variants.forEach(variant => {
+                    addEditVariantRow(variant);
+                });
+            } else {
+                addEditVariantRow('');
+            }
+
+            document.getElementById('editProductPopup').style.display = 'block';
+            document.getElementById('editProductOverlay').style.display = 'block';
+
+            // Store index in form dataset for reference on save
+            const form = document.getElementById('editProductForm');
+            form.dataset.editIndex = index;
+        }
+
+        // Add size-stock row to edit popup
+        function addEditSizeStockRow(size = '', stock = 0, barcode = '') {
+            const container = document.getElementById('editSizeStockContainer');
+            const div = document.createElement('div');
+            div.className = 'size-stock-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.innerHTML = `
+                    <input type="text" class="sizeInput" placeholder="Size (e.g. S, M, L)" value="${size}" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                    <input type="text" class="barcodeInput" placeholder="Barcode" value="${barcode}" style="width: 150px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                    <input type="number" class="stockInput" placeholder="Stock" value="${stock}" style="width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                    <button type="button" class="removeSizeStockBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+            `;
+            container.appendChild(div);
+
+            // Attach event listener to remove button
+            div.querySelector('.removeSizeStockBtn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Add event listener for Add Size button in edit popup
+        document.getElementById('editAddSizeStockBtn').addEventListener('click', () => {
+            addEditSizeStockRow();
+        });
+
+        // Add variant row to edit popup
+        function addEditVariantRow(variant = '') {
+            const container = document.getElementById('editVariantContainer');
+            const div = document.createElement('div');
+            div.className = 'variant-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="variantInput" placeholder="Variant (e.g. Color, Material)" value="${variant}" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" />
+                <button type="button" class="removeVariantBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+            `;
+            container.appendChild(div);
+
+            // Attach event listener to remove button
+            div.querySelector('.removeVariantBtn').addEventListener('click', () => {
+                div.remove();
+            });
+            div.querySelector('.removeVariantBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                div.remove();
+            });
+        }
+
+        // Close edit product popup
+        document.getElementById('editProductCloseBtn').addEventListener('click', () => {
+            document.getElementById('editProductPopup').style.display = 'none';
+            document.getElementById('editProductOverlay').style.display = 'none';
+        });
+
+        document.getElementById('editProductOverlay').addEventListener('click', () => {
+            document.getElementById('editProductPopup').style.display = 'none';
+            document.getElementById('editProductOverlay').style.display = 'none';
+        });
+
+        // Handle edit product form submission
+        document.getElementById('editProductForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const index = e.target.dataset.editIndex;
+            if (index === undefined) return;
+
+            const name = document.getElementById('editProductName').value.trim();
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const category = document.getElementById('editProductCategory').value.trim();
+            const imageInput = document.getElementById('editProductImage');
+
+            // Collect sizes and stocks from dynamic rows
+            const sizeRows = document.querySelectorAll('#editSizeStockContainer .size-stock-row');
+            const sizes = [];
+            for (const row of sizeRows) {
+                const sizeVal = row.querySelector('.sizeInput').value.trim();
+                const barcodeVal = row.querySelector('.barcodeInput').value.trim();
+                const stockVal = parseInt(row.querySelector('.stockInput').value);
+                if (!sizeVal || isNaN(stockVal) || stockVal < 0 || !barcodeVal) {
+                    alert('Please enter valid size, barcode, and stock values.');
+                    return;
+                }
+                sizes.push({ size: sizeVal, barcode: barcodeVal, stock: stockVal });
+            }
+        // Call renderProductList on page load and after product changes
+            // Collect variants from dynamic rows
+            const variantRows = document.querySelectorAll('#editVariantContainer .variant-row');
+            const variants = [];
+            for (const row of variantRows) {
+                const variantVal = row.querySelector('.variantInput').value.trim();
+                if (variantVal) {
+                    variants.push(variantVal);
+                }
+            }
+
+            if (!name || isNaN(price) || price <= 0 || !category) {
+                alert('Please fill all fields correctly.');
+                return;
+            }
+
+            const updateProduct = (imageDataUrl = null) => {
+                products[index].name = name;
+                products[index].price = price;
+                products[index].sizes = sizes;
+                products[index].variants = variants;
+                products[index].category = category;
+                if (imageDataUrl) {
+                    products[index].image = imageDataUrl;
+                }
+                saveProducts();
+                displayProducts();
+                renderProductList();
+                alert('Product updated successfully.');
+                document.getElementById('editProductPopup').style.display = 'none';
+                document.getElementById('editProductOverlay').style.display = 'none';
+            };
+
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    updateProduct(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                updateProduct();
+            }
+        });
+        loadProducts();
+        displayProducts();
+        renderProductList();
+
+        let cart = [];
+
+        // Size and variant selection popup HTML
+        const sizePopupHTML = `
+            <div id="sizeSelectionOverlay" style="position: fixed; top: 0; left: 0; width: 200vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1100; display: none;"></div>
+            <div id="sizeSelectionPopup" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); z-index: 1101; display: none; max-width: 320px; text-align: center;">
+                <h3>Select Size and Variant</h3>
+                <div style="margin-top: 15px;">
+                    <label for="selectSize">Size:</label>
+                    <select id="selectSize" style="padding: 8px; margin-left: 10px; min-width: 120px;"></select>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label for="selectVariant">Variant:</label>
+                    <select id="selectVariant" style="padding: 8px; margin-left: 10px; min-width: 120px;"></select>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button id="addToCartBtn" style="padding: 8px 16px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">Add to Cart</button>
+                    <button id="sizeCancelBtn" style="margin-left: 10px; padding: 8px 16px; background: #d63031; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        // Append size selection popup to body
+        document.body.insertAdjacentHTML('beforeend', sizePopupHTML);
+
+        const sizeSelectionOverlay = document.getElementById('sizeSelectionOverlay');
+        const sizeSelectionPopup = document.getElementById('sizeSelectionPopup');
+        const sizeOptions = document.getElementById('sizeOptions');
+        const sizeCancelBtn = document.getElementById('sizeCancelBtn');
+
+        let selectedProductForSize = null;
+
+        function showSizeSelection(product) {
+            selectedProductForSize = product;
+
+            // Populate size select
+            const selectSize = document.getElementById('selectSize');
+            selectSize.innerHTML = '';
+            if (product.sizes && product.sizes.length > 0) {
+                product.sizes.forEach(sizeObj => {
+                    const option = document.createElement('option');
+                    option.value = sizeObj.size;
+                    option.textContent = `${sizeObj.size} (Stock: ${sizeObj.stock})`;
+                    selectSize.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Default (Stock: 0)';
+                selectSize.appendChild(option);
+            }
+
+            // Populate variant select
+            const selectVariant = document.getElementById('selectVariant');
+            selectVariant.innerHTML = '';
+            if (product.variants && product.variants.length > 0) {
+                product.variants.forEach(variantObj => {
+                    const option = document.createElement('option');
+                    option.value = variantObj.name || variantObj;
+                    option.textContent = variantObj.name || variantObj;
+                    selectVariant.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No variants';
+                selectVariant.appendChild(option);
+            }
+
+            sizeSelectionOverlay.style.display = 'block';
+            sizeSelectionPopup.style.display = 'block';
+        }
+
+        function hideSizeSelection() {
+            selectedProductForSize = null;
+            sizeSelectionOverlay.style.display = 'none';
+            sizeSelectionPopup.style.display = 'none';
+        }
+
+        sizeCancelBtn.addEventListener('click', hideSizeSelection);
+        sizeSelectionOverlay.addEventListener('click', hideSizeSelection);
+
+        document.getElementById('addToCartBtn').addEventListener('click', () => {
+            const selectedSize = document.getElementById('selectSize').value;
+            const selectedVariant = document.getElementById('selectVariant').value;
+            if (selectedProductForSize) {
+                addToCart(selectedProductForSize.name, selectedProductForSize.price, selectedSize, selectedVariant);
+                hideSizeSelection();
+            }
+        });
+
+        function displayProducts(filter = '') {
+            const productList = document.getElementById('productList');
+            productList.innerHTML = '';
+            products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase())).forEach(product => {
+                const div = document.createElement('div');
+                div.className = 'product-card';
+                const imgSrc = product.image ? product.image : 'https://via.placeholder.com/100';
+
+                // Build sizes and stocks info string
+                let sizesInfo = '';
+                if (product.sizes && product.sizes.length > 0) {
+                    sizesInfo = '<ul style="list-style:none; padding-left:0; font-size:12px; text-align:left; margin:5px 0;">';
+                    product.sizes.forEach(sizeObj => {
+                        sizesInfo += `<li>Size: ${sizeObj.size}, Stock: ${sizeObj.stock}</li>`;
+                    });
+                    sizesInfo += '</ul>';
+                } else {
+                    sizesInfo = '<p style="font-size:12px; text-align:left; margin:5px 0;">No sizes available</p>';
+                }
+
+                div.innerHTML = `
+                    <img src="${imgSrc}" alt="${product.name}" style="width:100px; height:100px; object-fit:cover; margin-bottom:5px;">
+                    <div>${product.name}</div>
+                    <div style="font-size: 12px; color: #555;">${product.category || ''}</div>
+                    <div style="font-size: 14px; font-weight: bold; margin-top: 5px;">Price: ${product.price.toFixed(2)}</div>
+                    ${sizesInfo}
+                `;
+                div.onclick = () => showSizeSelection(product);
+                productList.appendChild(div);
+            });
+        }
+
+        document.getElementById('searchProduk').addEventListener('input', function () {
+            displayProducts(this.value);
+        });
+
+        document.getElementById('discountInput').addEventListener('input', renderCart);
+        document.getElementById('addOnInput').addEventListener('input', () => {
+            renderCart();
+            const addOnInput = document.getElementById('addOnInput');
+            const addOnDescContainer = document.getElementById('addOnDescContainer');
+            if (addOnInput.value && parseFloat(addOnInput.value) > 0) {
+                addOnDescContainer.style.display = 'block';
+            } else {
+                addOnDescContainer.style.display = 'none';
+            }
+        });
+
+        // Add Size button event
+            const addSizeBtn = document.getElementById('addSizeStockBtn');
+            addSizeBtn.addEventListener('click', () => {
+                addSizeStockRow();
+            });
+            addSizeBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                addSizeStockRow();
+            });
+
+            const addVariantBtn = document.getElementById('addVariantBtn');
+            addVariantBtn.addEventListener('click', () => {
+                addVariantRow();
+            });
+            addVariantBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                addVariantRow();
+            });
+
+        // Add Size Stock row function
+        function addSizeStockRow() {
+            const container = document.getElementById('sizeStockContainer');
+            const div = document.createElement('div');
+            div.className = 'size-stock-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.innerHTML = `
+                <input type="text" class="sizeInput" placeholder="Size (e.g. S, M, L)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                <input type="number" class="stockInput" placeholder="Stock" style="width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required />
+                <button type="button" class="removeSizeStockBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+            `;
+            container.appendChild(div);
+
+            // Attach event listener to remove button
+            div.querySelector('.removeSizeStockBtn').addEventListener('click', () => {
+                div.remove();
+            });
+            div.querySelector('.removeSizeStockBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                div.remove();
+            });
+        }
+
+        // Add Variant row function
+        function addVariantRow() {
+            const container = document.getElementById('variantContainer');
+            const div = document.createElement('div');
+            div.className = 'variant-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="variantInput" placeholder="Variant (e.g. Color, Material)" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" />
+                <input type="file" class="variantImageInput" accept="image/*" style="padding: 5px; border: 1px solid #ccc; border-radius: 5px;"/>
+                <button type="button" class="removeVariantBtn" style="background: #d63031; color: white; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer;">X</button>
+            `;
+            container.appendChild(div);
+
+            // Attach event listener to remove button
+            div.querySelector('.removeVariantBtn').addEventListener('click', () => {
+                div.remove();
+            });
+        }
+
+        // Initialize with one size-stock row
+        addSizeStockRow();
+
+        function addToCart(name, price, size = '', variant = '') {
+            // Find product in products list to check stock
+            const product = products.find(p => p.name === name);
+            if (!product) {
+                alert('Product not found.');
+                return;
+            }
+            // Find stock for selected size
+            let stock = 0;
+            if (product.sizes && product.sizes.length > 0) {
+                const sizeObj = product.sizes.find(s => s.size === size);
+                stock = sizeObj ? sizeObj.stock : 0;
+            } else {
+                stock = product.stock || 0;
+            }
+            if (stock <= 0) {
+                alert('Stock for this product and size is empty.');
+                return;
+            }
+
+            // Add 15000 to price if size is 3XL or above
+            const addOnPrice = 15000;
+            const sizesWithAddOn = ['3XL', '4XL', '5XL', '6XL'];
+            if (sizesWithAddOn.includes(size)) {
+                price += addOnPrice;
+            }
+
+            let existing = cart.find(item => item.name === name && item.size === size && item.variant === variant);
+            if (existing) {
+                if (existing.qty < stock) {
+                    existing.qty++;
+                } else {
+                    alert('Not enough stock for this product and size.');
+                    return;
+                }
+            } else {
+                cart.push({ name, price, size, variant, qty: 1 });
+            }
+            renderCart();
+        }
+        
+        // Removed duplicate renderCart functions, keeping only one updated version
+
+        function renderCart() {
+            const cartBody = document.getElementById('cartBody');
+            cartBody.innerHTML = '';
+            let totalQty = 0;
+            let total = 0;
+            const addOnInputValue = parseFloat(document.getElementById('addOnInput').value) || 0;
+            cart.forEach((item, index) => {
+                totalQty += item.qty;
+                total += item.qty * item.price;
+                const product = products.find(p => p.name === item.name);
+                let stock = 0;
+                if (product) {
+                    if (product.sizes && product.sizes.length > 0) {
+                        const sizeObj = product.sizes.find(s => s.size === item.size);
+                        stock = sizeObj ? sizeObj.stock : 0;
+                    } else {
+                        stock = product.stock || 0;
+                    }
+                }
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name} ${item.size ? '(' + item.size + ')' : ''}</td>
+                    <td>${item.price.toFixed(2)}</td>
+                    <td><button onclick="updateQty(${index}, -1)">-</button> ${item.qty} <button onclick="updateQty(${index}, 1)">+</button></td>
+                    <td>${(item.qty * item.price).toFixed(2)}</td>
+                    <td>${stock}</td>
+                    <td><button style="background:#e74c3c; color:white;" onclick="removeItem(${index})">X</button></td>
+                `;
+                cartBody.appendChild(row);
+            });
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const totalAfterDiscount = total + addOnInputValue - discount;
+            document.getElementById('itemCount').innerText = `Item: ${cart.length} (${totalQty})`;
+            document.getElementById('jumlah').innerText = `Jumlah: ${total.toFixed(2)}`;
+            document.getElementById('total').innerText = `Total: ${totalAfterDiscount.toFixed(2)}`;
+        }
+
+        function updateQty(index, change) {
+            const item = cart[index];
+            const product = products.find(p => p.name === item.name);
+            if (!product) {
+                alert('Product not found.');
+                return;
+            }
+            const newQty = item.qty + change;
+            if (newQty <= 0) {
+                cart.splice(index, 1);
+            } else if (newQty > product.stock) {
+                alert('Not enough stock for this product and size.');
+                return;
+            } else {
+                item.qty = newQty;
+            }
+            renderCart();
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
+        function checkout(method) {
+            if (cart.length === 0) {
+                alert('Cart kosong, tidak bisa checkout.');
+                return;
+            }
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += item.price * item.qty;
+            });
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const total = subtotal - discount;
+            const noBon = 'JRJN-' + Date.now();
+
+            const addOnDescription = document.getElementById('addOnDescription').value || '';
+            const receiptData = {
+                noBon,
+                items: cart.map(item => ({ name: item.name, price: item.price, qty: item.qty })),
+                subtotal,
+                discount,
+                addOn: 0,
+                addOnDescription,
+                total,
+                paymentMethod: method
+            };
+
+            // Save transaction to salesData in localStorage
+            let salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+            cart.forEach(item => {
+                salesData.push({
+                    tanggal: new Date().toLocaleDateString(),
+                    produk: item.name,
+                    size: item.size || '',
+                    qty: item.qty,
+                    total: (item.price * item.qty).toFixed(2),
+                    paymentMethod: method,
+                    addOn: 0,
+                    addOnDescription: addOnDescription
+                });
+            });
+            localStorage.setItem('salesData', JSON.stringify(salesData));
+
+            // Decrement stock for each product sold
+            cart.forEach(item => {
+                const product = products.find(p => p.name === item.name);
+                if (product) {
+                    if (product.sizes && product.sizes.length > 0) {
+                        const sizeObj = product.sizes.find(s => s.size === item.size);
+                        if (sizeObj) {
+                            sizeObj.stock = Math.max(sizeObj.stock - item.qty, 0);
+                        }
+                    } else {
+                        product.stock = Math.max(product.stock - item.qty, 0);
+                    }
+                }
+            });
+            saveProducts();
+            displayProducts();
+            renderProductList();
+
+            showReceiptPopup(receiptData);
+            clearCart();
+            alert(`Checkout with ${method.toUpperCase()} - Total: ${total.toFixed(2)}`);
+        }
+
+        function saveDraft() {
+            alert('Draft disimpan.');
+        }
+
+        // Show Report button event
+        document.getElementById('showReportBtn').addEventListener('click', () => {
+            window.open('report.html', '_blank', 'width=900,height=600,scrollbars=yes');
+        });
+
+        // Open Add Product popup
+        document.getElementById('openAddProductBtn').addEventListener('click', () => {
+            document.getElementById('addProductPopup').style.display = 'block';
+            document.getElementById('addProductOverlay').style.display = 'block';
+        });
+
+        // Close Add Product popup
+        document.getElementById('popupCloseBtn').addEventListener('click', () => {
+            document.getElementById('addProductPopup').style.display = 'none';
+            document.getElementById('addProductOverlay').style.display = 'none';
+        });
+
+        // Close popup when clicking outside the popup content
+        document.getElementById('addProductOverlay').addEventListener('click', () => {
+            document.getElementById('addProductPopup').style.display = 'none';
+            document.getElementById('addProductOverlay').style.display = 'none';
+        });
+
+        // Add Product form submit event
+        document.getElementById('addProductForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nameInput = document.getElementById('popupProductName');
+            const priceInput = document.getElementById('popupProductPrice');
+            const categoryInput = document.getElementById('popupProductCategory');
+            const barcodeInput = document.getElementById('popupProductBarcode');
+            const imageInput = document.getElementById('popupProductImage');
+            const name = nameInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const category = categoryInput.value.trim();
+            const barcode = barcodeInput.value.trim();
+
+            if (!name) {
+                alert('Please enter a product name.');
+                return;
+            }
+            if (isNaN(price) || price <= 0) {
+                alert('Please enter a valid price greater than 0.');
+                return;
+            }
+            if (!category) {
+                alert('Please enter a category.');
+                return;
+            }
+            if (imageInput.files.length === 0) {
+                alert('Please upload an image.');
+                return;
+            }
+
+            const file = imageInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imageDataUrl = e.target.result;
+
+                // Collect sizes and stocks
+                const sizeRows = document.querySelectorAll('.size-stock-row');
+                const sizes = [];
+                for (const row of sizeRows) {
+                    const size = row.querySelector('.sizeInput').value.trim();
+                    const stock = parseInt(row.querySelector('.stockInput').value);
+                    if (!size || isNaN(stock) || stock < 0) {
+                        alert('Please enter valid size and stock values.');
+                        return;
+                    }
+                    sizes.push({ size, stock });
+                }
+
+                // Collect variants
+                const variantRows = document.querySelectorAll('.variant-row');
+                const variants = [];
+                for (const row of variantRows) {
+                    const variant = row.querySelector('.variantInput').value.trim();
+                    if (variant) {
+                        variants.push(variant);
+                    }
+                }
+
+                products.push({ name, price, category, barcode, image: imageDataUrl, sizes, variants });
+                saveProducts();
+                displayProducts();
+                nameInput.value = '';
+                priceInput.value = '';
+                categoryInput.value = '';
+                barcodeInput.value = '';
+                imageInput.value = '';
+                alert(`Product "${name}" added successfully.`);
+                document.getElementById('addProductPopup').style.display = 'none';
+                document.getElementById('addProductOverlay').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Generate report function
+        function generateReport() {
+            const salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+            const tbody = document.querySelector('#reportTable tbody');
+            tbody.innerHTML = '';
+            let totalSales = 0;
+            if (salesData.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" style="text-align:center;">No transactions found.</td>`;
+                tbody.appendChild(tr);
+            } else {
+                salesData.forEach(sale => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sale.tanggal}</td>
+                        <td>${sale.produk}</td>
+                        <td>${sale.size || ''}</td>
+                        <td>${sale.qty}</td>
+                        <td>${sale.total}</td>
+                        <td>${sale.addOn ? sale.addOn : ''}</td>
+                        <td>${sale.addOnDescription ? sale.addOnDescription : ''}</td>
+                        <td>${sale.paymentMethod || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    totalSales += parseFloat(sale.total);
+                });
+            }
+            document.getElementById('reportSummary').innerText = `Total Sales: ${totalSales.toFixed(2)}`;
+        }
+
+        // Download Excel button event
+        document.getElementById('downloadExcelBtn').addEventListener('click', () => {
+            const salesData = JSON.parse(localStorage.getItem('salesData')) || [];
+            if (salesData.length === 0) {
+                alert('No transactions to download.');
+                return;
+            }
+
+            // Prepare CSV content
+            const headers = ['Date', 'Product', 'Size', 'Quantity', 'Total', 'Payment Method'];
+            const rows = salesData.map(sale => [
+                sale.tanggal,
+                sale.produk,
+                sale.size || '',
+                sale.qty,
+                sale.total,
+                sale.discount,
+                sale.addOnTotal,
+                sale.paymentMethod || ''
+            ]);
+
+            let csvContent = 'data:text/csv;charset=utf-8,';
+            csvContent += headers.join(',') + '\r\n';
+            rows.forEach(row => {
+                csvContent += row.map(field => `"${field}"`).join(',') + '\r\n';
+            });
+
+            // Create a download link and trigger it
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'transaction_report.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Init
+        loadProducts();
+        displayProducts();
+
+        const receiptPopup = document.getElementById('receiptPopup');
+        const receiptContent = document.getElementById('receiptContent');
+        const printBtn = document.getElementById('printBtn');
+        const closeBtn = document.getElementById('closeBtn');
+
+        printBtn.addEventListener('click', () => {
+            // For iPad compatibility, open print popup in a new window
+            if (navigator.userAgent.match(/iPad/i)) {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(document.getElementById('receiptContent').innerHTML);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            } else {
+                window.print();
+            }
+        });
+
+        closeBtn.addEventListener('click', () => {
+            receiptPopup.style.display = 'none';
+        });
+
+        function showReceiptPopup(data) {
+            const dateTime = new Date().toLocaleString();
+            const paymentMethod = data.paymentMethod || 'Unknown';
+            const receiptNumber = data.noBon || 'N/A';
+
+            let subtotal = 0;
+            data.items.forEach(item => {
+                subtotal += item.price * item.qty;
+            });
+            const discount = data.discount || 0;
+            const tax = data.tax || 0;
+            const addOn = parseFloat(document.getElementById('addOnInput').value) || 0;
+            const addOnDescription = data.addOnDescription || '';
+            const total = data.total || (subtotal - discount + tax + addOn);
+
+            let itemsRows = data.items.map(item => `
+                <tr>
+                    <td>${item.name} ${item.size ? '(' + item.size + ')' : ''}</td>
+                    <td class="qty">${item.qty}</td>
+                    <td class="price">${formatRupiah(item.price)}</td>
+                    <td class="total">${formatRupiah(item.price * item.qty)}</td>
+                </tr>
+            `).join('');
+
+            receiptContent.innerHTML = `
+                <div>
+                    <h2 style="text-align:center; margin: 0;">Jersey Jhony</h2>
+                    <p style="text-align:center; margin: 0;">Jl. Saparua No.1 Kota Bandung</p>
+                    <p style="text-align:center; margin: 0;">Telp: 08123456789</p>
+                    <hr>
+                    <p style="margin: 0;">Date: ${dateTime}</p>
+                    <p style="margin: 0;">Receipt No: ${receiptNumber}</p>
+                    <hr>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">Item</th>
+                                <th class="qty">Qty</th>
+                                <th class="price">Price</th>
+                                <th class="total">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsRows}
+                        </tbody>
+                    </table>
+                    <hr>
+                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                        <span>Subtotal</span>
+                        <span>${formatRupiah(subtotal)}</span>
+                    </p>
+                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                        <span>Discount</span>
+                        <span>${formatRupiah(discount)}</span>
+                    </p>
+                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                        <span>Add On</span>
+                        <span>${formatRupiah(addOn)}</span>
+                    </p>
+                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                        <span>Add On Description</span>
+                        <span>${addOnDescription}</span>
+                    </p>
+                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                        <span>Tax</span>
+                        <span>${formatRupiah(tax)}</span>
+                    </p>
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold;">
+                        <span>Total</span>
+                        <span>${formatRupiah(total)}</span>
+                    </p>
+                    <hr>
+                    <p style="margin: 0;">Payment Method: ${paymentMethod}</p>
+                    <hr>
+                    <p style="text-align:center; margin: 10px 0 0 0;">Thank you for your purchase!</p>
+                </div>
+            `;
+            receiptPopup.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

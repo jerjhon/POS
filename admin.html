@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Jersey Jhony</title>
+    <style>
+        body { display: flex; margin: 0; font-family: Arial, sans-serif; }
+        .sidebar { width: 220px; background: #2c3e50; color: white; height: 100vh; padding: 20px; box-sizing: border-box; }
+        .sidebar h2 { text-align: center; margin-bottom: 20px; }
+        .sidebar a { display: block; color: white; padding: 10px; margin: 5px 0; text-decoration: none; border-radius: 4px; }
+        .sidebar a:hover { background: #34495e; }
+        .main { flex: 1; padding: 20px; background: #ecf0f1; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table th, table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Admin Panel</h2>
+        <a href="#" onclick="showSection('produk')">Produk</a>
+        <a href="#" onclick="showSection('report')">Report Sales</a>
+        <a href="index.html">POS (Kasir)</a>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h1 id="sectionTitle">Manajemen Produk</h1>
+        </div>
+
+        <div id="produkSection">
+            <h3>Tambah Produk Baru</h3>
+            <div class="form-group">
+                <label>Nama Produk</label>
+                <input type="text" id="namaProduk">
+            </div>
+            <div class="form-group">
+                <label>Kategori Produk</label>
+                <input type="text" id="kategoriProduk">
+            </div>
+            <div class="form-group">
+                <label>Harga</label>
+                <input type="number" id="hargaProduk">
+            </div>
+            <div class="form-group">
+                <label>Upload Foto Produk</label>
+                <input type="file" id="fotoProduk">
+            </div>
+            <button onclick="tambahProduk()">Tambah Produk</button>
+
+            <h3>Daftar Produk</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Foto</th>
+                        <th>Nama</th>
+                        <th>Kategori</th>
+                        <th>Harga</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="produkList"></tbody>
+            </table>
+        </div>
+
+        <div id="reportSection" style="display:none;">
+            <h3>Report Sales Perhari</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Produk</th>
+                        <th>Qty Terjual</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="reportList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let produkData = JSON.parse(localStorage.getItem('produkData') || '[]');
+
+        function renderProduk() {
+            const list = document.getElementById('produkList');
+            list.innerHTML = '';
+            produkData.forEach((p, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><img src="${p.foto}" alt="${p.nama}" width="50"></td>
+                    <td>${p.nama}</td>
+                    <td>${p.kategori}</td>
+                    <td>${p.harga}</td>
+                    <td><button onclick="hapusProduk(${index})">Hapus</button></td>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function tambahProduk() {
+            const nama = document.getElementById('namaProduk').value;
+            const kategori = document.getElementById('kategoriProduk').value;
+            const harga = document.getElementById('hargaProduk').value;
+            const fotoInput = document.getElementById('fotoProduk');
+            if (fotoInput.files.length === 0) {
+                alert('Pilih foto produk!');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const foto = e.target.result;
+                produkData.push({ nama, kategori, harga, foto });
+                localStorage.setItem('produkData', JSON.stringify(produkData));
+                renderProduk();
+                alert('Produk berhasil ditambahkan!');
+            }
+            reader.readAsDataURL(fotoInput.files[0]);
+        }
+
+        function hapusProduk(index) {
+            if (confirm('Yakin ingin menghapus produk ini?')) {
+                produkData.splice(index, 1);
+                localStorage.setItem('produkData', JSON.stringify(produkData));
+                renderProduk();
+            }
+        }
+
+        function showSection(section) {
+            document.getElementById('produkSection').style.display = section === 'produk' ? 'block' : 'none';
+            document.getElementById('reportSection').style.display = section === 'report' ? 'block' : 'none';
+            document.getElementById('sectionTitle').innerText = section === 'produk' ? 'Manajemen Produk' : 'Report Sales';
+        }
+
+        renderProduk();    
+    </script>
+</body>
+</html>
