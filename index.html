@@ -928,7 +928,30 @@
             renderCart();
         }
 
-        function checkout(method) {
+        async function printViaBluetooth(receiptText) {
+            try {
+                const options = {
+                    filters: [{ services: ['printer_service_uuid'] }] // Replace with actual printer service UUID
+                };
+                const device = await navigator.bluetooth.requestDevice(options);
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('printer_service_uuid'); // Replace with actual service UUID
+                const characteristic = await service.getCharacteristic('printer_characteristic_uuid'); // Replace with actual characteristic UUID
+
+                // Convert receipt text to Uint8Array
+                const encoder = new TextEncoder();
+                const data = encoder.encode(receiptText);
+
+                await characteristic.writeValue(data);
+                alert('Print via Bluetooth berhasil.');
+            } catch (error) {
+                alert('Gagal print via Bluetooth: ' + error);
+                // fallback to normal print
+                window.print();
+            }
+        }
+
+        async function checkout(method) {
             if (cart.length === 0) {
                 alert('Cart kosong, tidak bisa checkout.');
                 return;
@@ -989,6 +1012,31 @@
 
             showReceiptPopup(receiptData);
             clearCart();
+
+            // Prepare receipt text for Bluetooth printing
+            let receiptText = `Jersey Jhony\nJl. Saparua No.1 Kota Bandung\nTelp: 08123456789\n\n`;
+            receiptText += `Date: ${new Date().toLocaleString()}\n`;
+            receiptText += `Receipt No: ${receiptData.noBon}\n\n`;
+            receiptText += `Item\tQty\tPrice\tTotal\n`;
+            receiptData.items.forEach(item => {
+                receiptText += `${item.name} (${item.size || ''})\t${item.qty}\t${item.price.toFixed(2)}\t${(item.price * item.qty).toFixed(2)}\n`;
+            });
+            receiptText += `\nSubtotal:\t${receiptData.subtotal.toFixed(2)}\n`;
+            receiptText += `Discount:\t${receiptData.discount.toFixed(2)}\n`;
+            receiptText += `Add On:\t${receiptData.addOn.toFixed(2)}\n`;
+            receiptText += `Add On Description:\t${receiptData.addOnDescription}\n`;
+            receiptText += `Total:\t${receiptData.total.toFixed(2)}\n`;
+            receiptText += `Payment Method:\t${receiptData.paymentMethod}\n\n`;
+            receiptText += `Thank you for your purchase!\n`;
+
+            // Automatically print via Bluetooth
+            if (navigator.bluetooth) {
+                await printViaBluetooth(receiptText);
+            } else {
+                alert('Bluetooth tidak didukung pada perangkat ini. Menggunakan cetak biasa.');
+                window.print();
+            }
+
             alert(`Checkout with ${method.toUpperCase()} - Total: ${total.toFixed(2)}`);
         }
 
@@ -1078,7 +1126,7 @@
                 }
 
                 products.push({ name, price, category, barcode, image: imageDataUrl, sizes, variants });
-                saveProducts();
+                localStorage.setItem('products', JSON.stringify(products));
                 displayProducts();
                 nameInput.value = '';
                 priceInput.value = '';
