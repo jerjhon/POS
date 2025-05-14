@@ -39,24 +39,35 @@
             max-width: 320px;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             font-family: monospace;
+            width: 80mm; /* default width for 80mm paper */
+        }
+        #receiptPopup.table-58mm {
+            width: 58mm;
+        }
+        #receiptPopup.table-80mm {
+            width: 80mm;
         }
         #receiptPopup table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 12px;
         }
         #receiptPopup th, #receiptPopup td {
             border: 1px solid #000;
             padding: 5px;
+            word-wrap: break-word;
         }
         #receiptPopup th {
             text-align: left;
         }
         #receiptPopup td.qty, #receiptPopup th.qty {
             text-align: center;
+            width: 10%;
         }
         #receiptPopup td.price, #receiptPopup th.price,
         #receiptPopup td.total, #receiptPopup th.total {
             text-align: right;
+            width: 20%;
         }
         #receiptPopup hr {
             border: 1px solid #000;
@@ -83,9 +94,15 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
+                width: 80mm; /* default print width */
                 box-shadow: none;
                 transform: none;
+            }
+            #receiptPopup.print-58mm {
+                width: 58mm;
+            }
+            #receiptPopup.print-80mm {
+                width: 80mm;
             }
         }
         /* Responsive and touch-friendly styles */
@@ -307,10 +324,13 @@
 
     <div id="receiptPopup">
         <div id="receiptContent"></div>
+        <!-- Removed print and close buttons to avoid printing them -->
+        <!--
         <div class="buttons">
             <button id="printBtn">Print</button>
             <button id="closeBtn">Close</button>
         </div>
+        -->
     </div>
 
     <!-- Edit Product Popup -->
@@ -1013,13 +1033,18 @@
             showReceiptPopup(receiptData);
             clearCart();
 
-            // Prepare receipt text for Bluetooth printing
+            // Prepare receipt text for Bluetooth printing with paper size adjustment
+            const paperSize = document.getElementById('paperSizeSelect') ? document.getElementById('paperSizeSelect').value : '80mm';
             let receiptText = `Jersey Jhony\nJl. Saparua No.1 Kota Bandung\nTelp: 08123456789\n\n`;
             receiptText += `Date: ${new Date().toLocaleString()}\n`;
             receiptText += `Receipt No: ${receiptData.noBon}\n\n`;
-            receiptText += `Item\tQty\tPrice\tTotal\n`;
+            receiptText += `Item${paperSize === '58mm' ? '' : '\tQty\tPrice\tTotal'}\n`;
             receiptData.items.forEach(item => {
-                receiptText += `${item.name} (${item.size || ''})\t${item.qty}\t${item.price.toFixed(2)}\t${(item.price * item.qty).toFixed(2)}\n`;
+                if (paperSize === '58mm') {
+                    receiptText += `${item.name} (${item.size || ''}) x${item.qty} ${(item.price * item.qty).toFixed(2)}\n`;
+                } else {
+                    receiptText += `${item.name} (${item.size || ''})\t${item.qty}\t${item.price.toFixed(2)}\t${(item.price * item.qty).toFixed(2)}\n`;
+                }
             });
             receiptText += `\nSubtotal:\t${receiptData.subtotal.toFixed(2)}\n`;
             receiptText += `Discount:\t${receiptData.discount.toFixed(2)}\n`;
