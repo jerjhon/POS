@@ -33,13 +33,14 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: white;
-            border: 1px solid #000;
+            border: 0px solid #000;
+            font-size: 14px;
             padding: 20px;
             z-index: 1000;
-            max-width: 320px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            max-width: 58mm;
+            box-shadow: 0 0 13px rgba(0,0,0,0.5);
             font-family: monospace;
-            width: 80mm; /* default width for 80mm paper */
+            width: 58mm; /* adjusted width for 5.6cm paper */
         }
         #receiptPopup.table-58mm {
             width: 58mm;
@@ -50,24 +51,34 @@
         #receiptPopup table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 8px;
+            table-layout: fixed;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         #receiptPopup th, #receiptPopup td {
             border: 1px solid #000;
-            padding: 5px;
+            padding: 5px 8px;
+            font-size: 8px;
             word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: nowrap;
         }
         #receiptPopup th {
             text-align: left;
         }
         #receiptPopup td.qty, #receiptPopup th.qty {
-            text-align: center;
+            text-align: left;
             width: 10%;
+            white-space: nowrap;
         }
         #receiptPopup td.price, #receiptPopup th.price,
         #receiptPopup td.total, #receiptPopup th.total {
-            text-align: right;
+            text-align: left;
             width: 20%;
+            white-space: nowrap;
         }
         #receiptPopup hr {
             border: 1px solid #000;
@@ -94,7 +105,7 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 80mm; /* default print width */
+                width: 58mm; /* default print width */
                 box-shadow: none;
                 transform: none;
             }
@@ -128,11 +139,13 @@
             }
             .header-controls input, .header-controls select {
                 font-size: 16px;
+                text-align: left;
                 padding: 12px;
             }
             table th, table td {
-                padding: 12px 8px;
-                font-size: 16px;
+                padding: 10px 8px;
+                text-align: left;
+                font-size: 7px;
             }
             .product-card {
                 padding: 15px;
@@ -153,7 +166,7 @@
                 border-radius: 10px;
             }
             .product-card {
-                padding: 20px;
+                padding: 5px;
             }
             .product-card img {
                 width: 140px;
@@ -391,9 +404,9 @@
             console.log('Products loaded:', products);
         }
 
-        // Format number as Indonesian Rupiah currency
+        // Format number as Indonesian Rupiah currency without decimal places
         function formatRupiah(amount) {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
         }
 
         // Save products to localStorage
@@ -1245,7 +1258,11 @@
             // For iPad compatibility, open print popup in a new window
             if (navigator.userAgent.match(/iPad/i)) {
                 const printWindow = window.open('', '_blank');
+                printWindow.document.write('<html><head><title>Print Receipt</title>');
+                printWindow.document.write('<style>body{font-family: monospace; margin:0; padding:0;} table{width:100%; border-collapse: collapse; font-size:12px;} th, td{border:1px solid #000; padding:5px; text-align:left;} th.qty, td.qty{text-align:center; width:10%;} th.price, td.price, th.total, td.total{text-align:right; width:20%;}</style>');
+                printWindow.document.write('</head><body>');
                 printWindow.document.write(document.getElementById('receiptContent').innerHTML);
+                printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 printWindow.focus();
                 printWindow.print();
@@ -1284,14 +1301,14 @@
             `).join('');
 
             receiptContent.innerHTML = `
-                <div>
-                    <h2 style="text-align:center; margin: 0;">Jersey Jhony</h2>
-                    <p style="text-align:center; margin: 0;">Jl. Saparua No.1 Kota Bandung</p>
-                    <p style="text-align:center; margin: 0;">Telp: 08123456789</p>
-                    <hr>
-                    <p style="margin: 0;">Date: ${dateTime}</p>
-                    <p style="margin: 0;">Receipt No: ${receiptNumber}</p>
-                    <hr>
+            <div style="font-family: monospace; font-size: 8px; line-height: 1.5; max-width: 50mm; margin: 0 4px; padding: 0 8px; word-wrap: break-word; word-break: break-word;">
+                <h2 style="text-align:center; margin: 0; font-weight: bold; font-size: 10px; line-height: 1.5;">Jersey Jhony</h2>
+                <p style="text-align:center; margin: 0; font-size: 8px; line-height: 1.5;">Jl. Saparua No.1 Kota Bandung</p>
+                <p style="text-align:center; margin: 0; font-size: 8px; line-height: 1.5;">Telp: 08123456789</p>
+                <hr style="border: 1px solid #000; margin: 1px 0;">
+                <p style="margin: 0; font-size: 8px; line-height: 1.5;">Date: ${dateTime}</p>
+                <p style="margin: 0; font-size: 8px; line-height: 1.5;">Receipt No: ${receiptNumber}</p>
+                <hr style="border: 1px solid #000; margin: 1px 0;">
                     <table>
                         <thead>
                             <tr>
