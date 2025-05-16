@@ -64,7 +64,6 @@
             word-wrap: break-word;
             word-break: break-word;
             overflow-wrap: break-word;
-            white-space: nowrap;
         }
         #receiptPopup th {
             text-align: left;
@@ -337,13 +336,6 @@
 
     <div id="receiptPopup">
         <div id="receiptContent"></div>
-        <!-- Removed print and close buttons to avoid printing them -->
-        <!--
-        <div class="buttons">
-            <button id="printBtn">Print</button>
-            <button id="closeBtn">Close</button>
-        </div>
-        -->
     </div>
 
     <!-- Edit Product Popup -->
@@ -1251,28 +1243,7 @@
 
         const receiptPopup = document.getElementById('receiptPopup');
         const receiptContent = document.getElementById('receiptContent');
-        const printBtn = document.getElementById('printBtn');
-        const closeBtn = document.getElementById('closeBtn');
-
-        printBtn.addEventListener('click', () => {
-            // For iPad compatibility, open print popup in a new window
-            if (navigator.userAgent.match(/iPad/i)) {
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write('<html><head><title>Print Receipt</title>');
-                printWindow.document.write('<style>body{font-family: monospace; margin:0; padding:0;} table{width:100%; border-collapse: collapse; font-size:12px;} th, td{border:1px solid #000; padding:5px; text-align:left;} th.qty, td.qty{text-align:center; width:10%;} th.price, td.price, th.total, td.total{text-align:right; width:20%;}</style>');
-                printWindow.document.write('</head><body>');
-                printWindow.document.write(document.getElementById('receiptContent').innerHTML);
-                printWindow.document.write('</body></html>');
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-            } else {
-                window.print();
-            }
-        });
-
-        closeBtn.addEventListener('click', () => {
+        receiptPopup.addEventListener('click', () => {
             receiptPopup.style.display = 'none';
         });
 
