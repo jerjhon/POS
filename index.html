@@ -37,10 +37,10 @@
             font-size: 14px;
             padding: 20px;
             z-index: 1000;
-            max-width: 58mm;
+            max-width: none;
             box-shadow: 0 0 13px rgba(0,0,0,0.5);
             font-family: monospace;
-            width: 58mm; /* adjusted width for 5.6cm paper */
+            /*width: 58mm; /* adjusted width for 5.6cm paper */
         }
         #receiptPopup.table-58mm {
             width: 58mm;
@@ -49,7 +49,7 @@
             width: 80mm;
         }
         #receiptPopup table {
-            width: 100%;
+            width: auto;
             border-collapse: collapse;
             font-size: 8px;
             table-layout: auto;
@@ -110,7 +110,7 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 58mm; /* default print width */
+                width: 100%; /* default print width */
                 box-shadow: none;
                 transform: none;
             }
@@ -1071,6 +1071,7 @@
             } else {
                 alert('Bluetooth tidak didukung pada perangkat ini. Menggunakan cetak biasa.');
                 window.print();
+                window.print(); // Print second copy automatically
             }
 
             alert(`Checkout with ${method.toUpperCase()} - Total: ${total.toFixed(2)}`);
@@ -1278,7 +1279,7 @@
             `).join('');
 
             receiptContent.innerHTML = `
-            <div style="font-family: monospace; font-size: 8px; line-height: 1.5; max-width: 50mm; margin: 0 4px; padding: 0 8px; word-wrap: break-word; word-break: break-word;">
+            <div style="font-family: monospace; font-size: 8px; line-height: 1.5; max-width: 60MM; margin: 0 4px; padding: 0 8px; word-wrap: break-word; word-break: break-word;">
                 <div style="text-align:center; margin: 0; line-height: 1.5;">
 <img src="image/Logo%20Jerjhon%20Baru.png" alt="Logo Jerjhon" style="max-width: 100%; max-height: 60px; object-fit: contain; margin: 0 auto; display: block;" />
                 </div>
