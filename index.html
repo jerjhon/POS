@@ -60,7 +60,7 @@
         #receiptPopup th, #receiptPopup td {
             border: 1px solid #000;
             padding: 5px 8px;
-            font-size: 6px;
+            font-size: 8px;
             font-weight: bold;
             word-wrap: break-word;
             word-break: break-word;
@@ -1283,12 +1283,12 @@
                 <div style="text-align:center; margin: 0; line-height: 1.5;">
 <img src="image/Logo%20Jerjhon%20Baru.png" alt="Logo Jerjhon" style="max-width: 100%; max-height: 60px; object-fit: contain; margin: 0 auto; display: block;" />
                 </div>
-                <p style="text-align:center; margin: 0; font-size: 8px; line-height: 1.5;">Jl. Saparua No.1 Kota Bandung</p>
-                <p style="text-align:center; margin: 0; font-size: 8px; line-height: 1.5;">Telp: 08123456789</p>
+                <p style="text-align:center; margin: 0; font-size: 10px; line-height: 1.5;">Jl. Saparua No.1 Kota Bandung</p>
+                <p style="text-align:center; margin: 0; font-size: 9px; line-height: 1.5;">Telp: 08123456789</p>
                 <p>
                 <hr style="border: 1px solid #000; margin: 1px 0;">
-                <p style="margin: 0; font-size: 8px; line-height: 1.5;">Date: ${dateTime}</p>
-                <p style="margin: 0; font-size: 8px; line-height: 1.5;">Receipt No: ${receiptNumber}</p>
+                <p style="margin: 0; font-size: 10px; line-height: 1.5;">Date: ${dateTime}</p>
+                <p style="margin: 0; font-size: 10px; line-height: 1.5;">Receipt No: ${receiptNumber}</p>
                 <hr style="border: 1px solid #000; margin: 1px 0;">
                     <table>
                         <thead>
@@ -1304,27 +1304,27 @@
                         </tbody>
                     </table>
                     <hr>
-                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
                         <span>Subtotal</span>
                         <span>${formatRupiah(subtotal)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
                         <span>Discount</span>
                         <span>${formatRupiah(discount)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
                         <span>Add On</span>
                         <span>${formatRupiah(addOn)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
                         <span>Add On Description</span>
                         <span>${addOnDescription}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0;">
+                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
                         <span>Tax</span>
                         <span>${formatRupiah(tax)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 9px;">
                         <span>Total</span>
                         <span>${formatRupiah(total)}</span>
                     </p>
