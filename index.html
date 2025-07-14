@@ -42,16 +42,13 @@
             font-family: monospace;
             /*width: 58mm; /* adjusted width for 5.6cm paper */
         }
-        #receiptPopup.table-58mm {
-            width: 58mm;
-        }
         #receiptPopup.table-80mm {
             width: 80mm;
         }
         #receiptPopup table {
             width: auto;
             border-collapse: collapse;
-            font-size: 8px;
+            font-size: 10px;
             table-layout: auto;
             word-wrap: break-word;
             word-break: break-word;
@@ -60,7 +57,7 @@
         #receiptPopup th, #receiptPopup td {
             border: 1px solid #000;
             padding: 5px 8px;
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             word-wrap: break-word;
             word-break: break-word;
@@ -75,8 +72,7 @@
         }
         #receiptPopup td.price, #receiptPopup th.price,
         #receiptPopup td.total, #receiptPopup th.total {
-            text-align: left;
-            padding-right: 0px;
+            text-align: center;
             font-family: monospace;
         }
         #receiptPopup td:first-child, #receiptPopup th:first-child {
@@ -114,9 +110,6 @@
                 box-shadow: none;
                 transform: none;
             }
-            #receiptPopup.print-58mm {
-                width: 58mm;
-            }
             #receiptPopup.print-80mm {
                 width: 80mm;
             }
@@ -150,7 +143,7 @@
             table th, table td {
                 padding: 10px 8px;
                 text-align: left;
-                font-size: 7px;
+                font-size: 10px;
             }
             .product-card {
                 padding: 15px;
@@ -961,10 +954,28 @@
 
         async function printViaBluetooth(receiptText) {
             try {
-                const options = {
-                    filters: [{ services: ['printer_service_uuid'] }] // Replace with actual printer service UUID
-                };
-                const device = await navigator.bluetooth.requestDevice(options);
+                const cachedDeviceId = localStorage.getItem('bluetoothPrinterDeviceId');
+                let device;
+
+                if (cachedDeviceId) {
+                    // Try to get previously connected device
+                    device = await navigator.bluetooth.getDevices()
+                        .then(devices => devices.find(d => d.id === cachedDeviceId));
+                    if (!device) {
+                        // If not found, request device again
+                        device = await navigator.bluetooth.requestDevice({
+                            filters: [{ services: ['printer_service_uuid'] }]
+                        });
+                        localStorage.setItem('bluetoothPrinterDeviceId', device.id);
+                    }
+                } else {
+                    // No cached device, request device
+                    device = await navigator.bluetooth.requestDevice({
+                        filters: [{ services: ['printer_service_uuid'] }]
+                    });
+                    localStorage.setItem('bluetoothPrinterDeviceId', device.id);
+                }
+
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('printer_service_uuid'); // Replace with actual service UUID
                 const characteristic = await service.getCharacteristic('printer_characteristic_uuid'); // Replace with actual characteristic UUID
@@ -1046,15 +1057,15 @@
 
             // Prepare receipt text for Bluetooth printing with paper size adjustment
             const paperSize = document.getElementById('paperSizeSelect') ? document.getElementById('paperSizeSelect').value : '80mm';
-            let receiptText = `Jersey Jhony\nJl. Saparua No.1 Kota Bandung\nTelp: 08123456789\n\n`;
+            let receiptText = `Jersey Jhony\nJl. Permata Kopo 2 Kab.Bandung\nTelp: 08112440553\n\n`;
             receiptText += `Date: ${new Date().toLocaleString()}\n`;
             receiptText += `Receipt No: ${receiptData.noBon}\n\n`;
-            receiptText += `Item${paperSize === '58mm' ? '' : '\tQty\tPrice\tTotal'}\n`;
+            receiptText += `Item${paperSize === '80mm' ? '' : '\tQty\tPrice\tTotal'}\n`;
             receiptData.items.forEach(item => {
-                if (paperSize === '58mm') {
-                    receiptText += `${item.name} (${item.size || ''}) x${item.qty} ${(item.price * item.qty).toFixed(2)}\n`;
+                if (paperSize === '8-mm') {
+                    receiptText += `${item.name} - Size (${item.size || ''}) x${item.qty} ${(item.price * item.qty).toFixed(2)}\n`;
                 } else {
-                    receiptText += `${item.name} (${item.size || ''})\t${item.qty}\t${item.price.toFixed(2)}\t${(item.price * item.qty).toFixed(2)}\n`;
+                    receiptText += `${item.name} - Size ${item.size || '-'}\t${item.qty}\t${item.price.toFixed(2)}\t${(item.price * item.qty).toFixed(2)}\n`;
                 }
             });
             receiptText += `\nSubtotal:\t${receiptData.subtotal.toFixed(2)}\n`;
@@ -1279,24 +1290,23 @@
             `).join('');
 
             receiptContent.innerHTML = `
-            <div style="font-family: monospace; font-size: 8px; line-height: 1.5; max-width: 60MM; margin: 0 4px; padding: 0 8px; word-wrap: break-word; word-break: break-word;">
+            <div style="font-family: monospace; font-size: 10px; line-height: 1.5;  max-width: 80mm; margin: 0; padding: 0; box-sizing: border-box; word-wrap: break-word; word-break: break-word;">
                 <div style="text-align:center; margin: 0; line-height: 1.5;">
 <img src="image/Logo%20Jerjhon%20Baru.png" alt="Logo Jerjhon" style="max-width: 100%; max-height: 60px; object-fit: contain; margin: 0 auto; display: block;" />
                 </div>
-                <p style="text-align:center; margin: 0; font-size: 10px; line-height: 1.5;">Jl. Saparua No.1 Kota Bandung</p>
-                <p style="text-align:center; margin: 0; font-size: 9px; line-height: 1.5;">Telp: 08123456789</p>
-                <p>
+                <p style="text-align:center; margin: 0; font-size: 10px; line-height: 1.5;">Jl. Kopo No.85 Kota Bandung</p>
+                <p style="text-align:center; margin: 0; font-size: 10px; line-height: 1.5;">Telp: 08123456789</p>
                 <hr style="border: 1px solid #000; margin: 1px 0;">
                 <p style="margin: 0; font-size: 10px; line-height: 1.5;">Date: ${dateTime}</p>
                 <p style="margin: 0; font-size: 10px; line-height: 1.5;">Receipt No: ${receiptNumber}</p>
                 <hr style="border: 1px solid #000; margin: 1px 0;">
-                    <table>
+                    <table style="width: 100%; table-layout: auto; font-size: 10px;">
                         <thead>
                             <tr>
                                 <th style="text-align:left;">Item</th>
-                                <th class="qty">Qty</th>
-                                <th class="price">Price</th>
-                                <th class="total">Total</th>
+                                <th class="qty" style="text-align:center;">Qty</th>
+                                <th class="price" style="text-align:right;">Price</th>
+                                <th class="total" style="text-align:right;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1304,27 +1314,27 @@
                         </tbody>
                     </table>
                     <hr>
-                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 10px;">
                         <span>Subtotal</span>
                         <span>${formatRupiah(subtotal)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 10px;">
                         <span>Discount</span>
                         <span>${formatRupiah(discount)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 10px;">
                         <span>Add On</span>
                         <span>${formatRupiah(addOn)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 10px;">
                         <span>Add On Description</span>
                         <span>${addOnDescription}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0 font-weight: bold; font-size: 9px;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 10px;">
                         <span>Tax</span>
                         <span>${formatRupiah(tax)}</span>
                     </p>
-                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 9px;">
+                    <p style="display: flex; justify-content: space-between; margin: 0; font-weight: bold; font-size: 10px;">
                         <span>Total</span>
                         <span>${formatRupiah(total)}</span>
                     </p>
